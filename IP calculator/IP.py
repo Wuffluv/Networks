@@ -5,6 +5,7 @@ class IPAddressCalculator:
         self.network_address = None
         self.broadcast_address = None
         self.is_local = None
+        self.ip_class = None
 
     def validate_ip(self):
         """
@@ -43,6 +44,9 @@ class IPAddressCalculator:
         # Определяем, является ли IP локальным
         self.is_local = self.is_local_ip()
 
+        # Определяем класс IP
+        self.ip_class = self.get_ip_class()
+
     def is_local_ip(self):
         """
         Проверка, является ли IP-адрес локальным.
@@ -55,6 +59,25 @@ class IPAddressCalculator:
             return True
         else:
             return False
+
+
+    def get_ip_class(self):
+
+        first_octet = int(self.ip.split('.')[0])
+
+        if 1 <= first_octet <= 126:
+            return 'A'
+        elif 128 <= first_octet <= 191:
+            return 'B'
+        elif 192 <= first_octet <= 223:
+            return 'C'
+        elif 224 <= first_octet <= 239:
+            return 'D (Multicast)'
+        elif 240 <= first_octet <= 255:
+            return 'E (Reserved for experimental use)'
+        else:
+            return 'Unknown or invalid IP class'
+
 
 def main():
     try:
@@ -73,6 +96,7 @@ def main():
         calculator.calculate_network()
         print(f"Сетевой адрес: {calculator.network_address}")
         print(f"Широковещательный адрес: {calculator.broadcast_address}")
+        print(f"Класс IP: {calculator.ip_class}")
 
          # Определяем и выводим, является ли IP локальным
         if calculator.is_local:
@@ -86,5 +110,5 @@ def main():
         print("\nПрограмма завершена пользователем.")
 
 
-
-main()
+if __name__ == "__main__":
+    main()
