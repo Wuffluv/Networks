@@ -4,42 +4,46 @@ class IPAddressCalculator:
         self.subnet_mask = subnet_mask
         self.network_address = None
         self.broadcast_address = None
-        self.is_local = None
-        self.ip_class = None
+        self.is_local = None  # Новое свойство для определения, является ли IP локальным
+        self.ip_class = None  # Новое свойство для определения класса IP
 
     def validate_ip(self):
-        """
-        Проверка корректности введенного IP-адреса.
-        """
+        # Проверка корректности введенного IP-адреса
         octets = self.ip.split('.')
-        if len(octets) != 4:
+        if len(octets) != 4 or not all(0 <= int(octet) <= 255 for octet in octets):
             raise ValueError("Некорректный формат IP-адреса")
 
-        for octet in octets:
-            if not (0 <= int(octet) <= 255):
-                raise ValueError("Некорректный формат IP-адреса")
-
     def validate_subnet_mask(self):
-        """
-        Проверка корректности введенной маски подсети.
-        """
-        octets = self.subnet_mask.split('.')
-        if len(octets) != 4:
+        # Проверка корректности введенной маски подсети
+        try:
+            # Пытаемся преобразовать введенную маску в число
+            subnet_mask_value = int(self.subnet_mask)
+
+            # Проверяем, что значение находится в допустимом диапазоне
+            if 0 <= subnet_mask_value <= 32:
+                self.subnet_mask = subnet_mask_value
+            else:
+                raise ValueError("Недопустимая маска подсети")
+        except ValueError:
             raise ValueError("Некорректный формат маски подсети")
 
-        binary_mask = ''.join(format(int(octet), '08b') for octet in octets)
-        if '01' in binary_mask:
-            raise ValueError("Некорректная маска подсети")
-
     def calculate_network(self):
-        """
-        Расчет сетевого адреса и широковещательного адреса.
-        """
-        network_address = '.'.join(str(int(ip_octet) & int(mask_octet)) for ip_octet, mask_octet in zip(self.ip.split('.'), self.subnet_mask.split('.')))
-        broadcast_address = '.'.join(str(int(network_octet) | int(~int(mask_octet) & 255)) for network_octet, mask_octet in zip(network_address.split('.'), self.subnet_mask.split('.')))
+        # Расчет сетевого адреса и широковещательного адреса
+        ip_octets = [int(octet) for octet in self.ip.split('.')]
+        mask_octets = [0] * 4
 
-        self.network_address = network_address
-        self.broadcast_address = broadcast_address
+        # Заполняем первые self.subnet_mask бит маски
+        for i in range(self.subnet_mask):
+            mask_octets[i // 8] |= (1 << (7 - i % 8))
+
+        # Выполняем поразрядное И для определения сетевого адреса
+        network_octets = [ip_octet & mask_octet for ip_octet, mask_octet in zip(ip_octets, mask_octets)]
+        self.network_address = '.'.join(map(str, network_octets))
+
+        # Определение широковещательного адреса (поразрядное ИЛИ)
+        inverted_mask_octets = [255 - mask_octet for mask_octet in mask_octets]
+        broadcast_octets = [network_octet | inverted_mask_octet for network_octet, inverted_mask_octet in zip(network_octets, inverted_mask_octets)]
+        self.broadcast_address = '.'.join(map(str, broadcast_octets))
 
         # Определяем, является ли IP локальным
         self.is_local = self.is_local_ip()
@@ -55,14 +59,12 @@ class IPAddressCalculator:
         first_octet = int(octets[0])
 
         # Проверяем, принадлежит ли IP к одной из локальных подсетей
-        if (first_octet == 10) or (first_octet == 172 and 16 <= int(octets[1]) <= 31) or (first_octet == 192 and int(octets[1]) == 168):
-            return True
-        else:
-            return False
-
+        return (first_octet == 10) or (first_octet == 172 and 16 <= int(octets[1]) <= 31) or (first_octet == 192 and int(octets[1]) == 168)
 
     def get_ip_class(self):
-
+        """
+        Определение класса IP-адреса.
+        """
         first_octet = int(self.ip.split('.')[0])
 
         if 1 <= first_octet <= 126:
@@ -98,7 +100,7 @@ def main():
         print(f"Широковещательный адрес: {calculator.broadcast_address}")
         print(f"Класс IP: {calculator.ip_class}")
 
-         # Определяем и выводим, является ли IP локальным
+        # Определяем и выводим, является ли IP локальным
         if calculator.is_local:
             print("IP-адрес является локальным.")
         else:
@@ -108,7 +110,6 @@ def main():
         print(f"Ошибка: {e}")
     except KeyboardInterrupt:
         print("\nПрограмма завершена пользователем.")
-
 
 if __name__ == "__main__":
     main()
