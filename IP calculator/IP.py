@@ -67,6 +67,9 @@ class IPAddressCalculator:
         """
         first_octet = int(self.ip.split('.')[0])
 
+        if self.ip == '127.0.0.1':
+            return 'Loopback'
+
         if 1 <= first_octet <= 126:
             return 'A'
         elif 128 <= first_octet <= 191:
@@ -103,6 +106,8 @@ def main():
         # Определяем и выводим, является ли IP локальным
         if calculator.is_local:
             print("IP-адрес является локальным.")
+        elif calculator.ip == '127.0.0.1':
+            print("IP-адрес является loopback.")
         else:
             print("IP-адрес является глобальным.")
 
