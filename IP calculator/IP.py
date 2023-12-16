@@ -69,6 +69,8 @@ class IPAddressCalculator:
 
         if self.ip == '127.0.0.1':
             return 'Loopback'
+        if 0 == first_octet:
+            return 'Неопределенный IP-адрес'
 
         if 1 <= first_octet <= 126:
             return 'A'
