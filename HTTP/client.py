@@ -1,11 +1,31 @@
-import requests
+import http.client
+import os
 
-# URL сервера
-server_url = 'http://localhost:8000'
+# Просьба пользователя ввести путь к файлу
+file_path = input("Введите название файла: ")
 
-# Выполнение GET-запроса с параметрами
-response = requests.get(server_url + '/example_path?param1=value1&param2=value2')
+# Проверяем, существует ли файл по указанному пути
+if not os.path.isfile(file_path):
+    print("Файл не найден.")
+    exit()
 
-# Вывод ответа
-print('Response Status Code:', response.status_code)
-print('Response Body:', response.text)
+# Открываем файл для чтения в бинарном режиме
+with open(file_path, 'rb') as file:
+    # Читаем данные файла
+    file_data = file.read()
+
+    # Устанавливаем соединение с сервером
+    conn = http.client.HTTPConnection("localhost", 8000)
+
+    # Отправляем POST-запрос с данными файла
+    conn.request("POST", "/upload_file", body=file_data)
+
+    # Получаем ответ от сервера
+    response = conn.getresponse()
+
+    # Выводим ответ сервера
+    print('Статус ответа:', response.status)
+    print('Ответ:', response.read().decode())
+
+    # Закрываем соединение
+    conn.close()

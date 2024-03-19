@@ -1,24 +1,26 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse, parse_qs
+import os
 
 # Обработчик HTTP-запросов
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        # Разбираем URL для получения пути и параметров запроса
-        parsed_path = urlparse(self.path)
-        query_params = parse_qs(parsed_path.query)
+    def do_POST(self):
+        # Получаем длину тела запроса
+        content_length = int(self.headers['Content-Length'])
+        # Получаем имя файла из заголовка запроса
+        file_name = os.path.basename(self.path)
 
-        # Отправляем успешный HTTP-ответ с данными в формате JSON
+        # Читаем данные файла из тела запроса
+        file_data = self.rfile.read(content_length)
+
+        # Записываем данные файла в новый файл
+        with open(file_name, 'wb') as new_file:
+            new_file.write(file_data)
+
+        # Отправляем ответ о успешной загрузке файла
         self.send_response(200)
-        self.send_header('Content-type', 'application/json')
+        self.send_header('Content-type', 'text/plain')
         self.end_headers()
-
-        # Формируем ответное тело
-        response_body = {
-            'path': parsed_path.path,
-            'params': query_params
-        }
-        self.wfile.write(bytes(str(response_body), 'utf-8'))
+        self.wfile.write(b'File uploaded successfully!')
 
 # Функция для запуска сервера
 def run_server(server_class=HTTPServer, handler_class=SimpleHTTPRequestHandler, port=8000):
